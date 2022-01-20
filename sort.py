@@ -33,7 +33,7 @@ class Window(QMainWindow):
         self.height = 1000
         self.dot_num = 3
         self.center = 500
-        # self.dots =
+        # self.dots = []
         self.InitWindow()
 
     def InitWindow(self):

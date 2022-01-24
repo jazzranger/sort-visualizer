@@ -1,24 +1,12 @@
-def bubble_sort(arr):
-    sort_req = True
-    while sort_req:
-        sort_req = False
-        for i in range(len(arr)-1):
-            if arr[i+1] < arr[i]:
-                arr[i], arr[i+1] = arr[i+1], arr[i]
-                sort_req = True
-    return arr
-
-#
-# random_list_of_nums = [5, 2, 1, 8, 4, 3, 10, 12, 29]
-# bubble_sort(random_list_of_nums)
-# print(random_list_of_nums)
-
 from PyQt5.QtWidgets import QApplication, QMainWindow
-from PyQt5.QtGui import QPainter, QBrush, QPen, QPainterPath, QColor, QPolygon
-from PyQt5.QtCore import Qt, QTimer, QTimeLine, QLineF, QPoint
+from PyQt5.QtGui import QPainter, QBrush, QPen, QColor
+from PyQt5.QtCore import Qt
+import colorsys
 import math
 import sys
 from random import randint
+import hilbert
+from block import Block
 
 class Window(QMainWindow):
 
@@ -29,11 +17,12 @@ class Window(QMainWindow):
         self.title = "PyQt5 Drawing Tutorial"
         self.top = 150
         self.left = 150
-        self.width = 1000
-        self.height = 1000
-        self.dot_num = 3
-        self.center = 500
-        # self.dots = []
+        self.width = 700
+        self.height = 700
+        self.block_num = 1000
+        self.center = 350
+        self._circle_angle = 5760 # углы задаются 1/16-той градуса, полный круг 16*360
+        self.block = [Block().get_rgb() for _ in range(self.block_num)]
         self.InitWindow()
 
     def InitWindow(self):
@@ -47,32 +36,36 @@ class Window(QMainWindow):
         self.drawLines(qp)
         qp.end()
 
-    def drawLines(self, qp):
-        self.draw_triangle(qp)
+    def lum (self, r, g, b):
+        # Luminosity sorting
+        return math.sqrt( .241 * r + .691 * g + .068 * b )
 
-    def draw_triangle(self, qp):
-        for i in range(self.dot_num):
-            color = QColor(randint(0, 250), randint(0, 250), randint(0, 250))
+    def step (self, r,g,b, repetitions=1):
+        # Step sorting
+        lum = math.sqrt( .241 * r + .691 * g + .068 * b )
+        h, s, v = colorsys.rgb_to_hsv(r,g,b)
+        h2 = int(h * repetitions)
+        lum2 = int(lum * repetitions)
+        v2 = int(v * repetitions)
+        return (h2, lum, v2)
+
+    def drawLines(self, qp):
+        # self.block.sort(key=lambda rgb: colorsys.rgb_to_hls(*rgb))
+        # self.block.sort(key=lambda rgb: (colorsys.rgb_to_hsv(*rgb)))
+        # self.block.sort(key=lambda rgb: self.step(*rgb, 3))
+        # self.block.sort(key=lambda rgb: self.lum(*rgb))
+        # self.block.sort(key=lambda rgb: hilbert.Hilbert_to_int(rgb))
+
+        self.draw_circles(qp)
+
+    def draw_circles(self, qp):
+        for i, block in enumerate(self.block, start=1):
+            color = QColor(*block)
             pen = QPen(color, 1, Qt.SolidLine)
             qp.setPen(pen)
             qp.setBrush(QBrush(color))
-
-            pt_x = math.cos(2 * math.pi * i/self.dot_num) * self.center + self.center
-            pt_y = math.sin(2 * math.pi * i/self.dot_num) * self.center + self.center
-
-            next_pt_x = math.cos(2 * math.pi * (i+1)/self.dot_num) * self.center + self.center
-            next_pt_y = math.sin(2 * math.pi * (i+1)/self.dot_num) * self.center + self.center
-
-            points = QPolygon([
-                QPoint(pt_x, pt_y),
-                QPoint(self.center, self.center),
-                QPoint(next_pt_x, next_pt_y)
-            ])
-
-            qp.drawPolygon(points)
-
-
-
+            span_angle = self._circle_angle/self.block_num
+            qp.drawPie(0, 0, self.width, self.height, span_angle*i, span_angle)
 
 App = QApplication(sys.argv)
 window = Window()
